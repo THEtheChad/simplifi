@@ -1,0 +1,14 @@
+{
+  "name": "simplifi",
+  "version": "1.0.0",
+  "main": "index.js",
+  "repository": {
+    "url": "https://github.com/THEtheChad/simplifi.git",
+    "type": "git"
+  },
+  "author": "THEtheChad <chad.d.elliott@gmail.com>",
+  "license": "MIT",
+  "dependencies": {
+    "request": "^2.78.0"
+  }
+}
