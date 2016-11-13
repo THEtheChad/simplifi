@@ -1,5 +1,6 @@
-var request = require('request');
 var https = require('https');
+var makeSource = require('stream-json');
+var Assembler  = require('stream-json/utils/Assembler');
 
 function API(config){
 	if(!(this instanceof API)) return new API(config);
@@ -21,44 +22,45 @@ api.get = function(endpoint, callback){
 	}, callback);
 };
 
-api._http = function(endpoint, callback){
+api.companies = function(id, callback){
+	if(arguments.length < 2) callback = id;
+	var recordParser = this._recordParser(callback):
+	this.get('companies', (response)=>response.pipe(recordParser))
+};
 
+api._recordParser = function(record){
+	var source = makeSource();
+	var assembler;
+	var array_stack = [];
+	var object_stack = [];
 
-	request({
-	  url: 'https://app.simpli.fi/api/' + endpoint,
-	  headers: {
-	  	'X-App-Key': this.app_key,
-	  	'X-User-Key': this.user_key,
-	  	'Content-Type': 'application/json'
-	  }
-	}, function(err, res, body){
-		if(res.statusCode != 200) return console.err(res.statusCode, res.statusMessage);
+	source.output.on('data', (chunk)=>{
+		if(chunk.name == 'endArray'){
+			array_stack.pop();
+		}
 
-		callback(body);
+		if(array_stack.length){
+			if(chunk.name == 'startObject'){
+				object_stack.push(1);
+				if(object_stack.length == 1) assembler = new Assembler();
+			}
+
+			assembler[chunk.name] && assembler[chunk.name](chunk.value);
+
+			if(chunk.name == 'endObject'){
+				object_stack.pop();
+				if(!object_stack.length){
+					record(assembler.current);
+				}
+			}
+		}
+
+		if(chunk.name == 'startArray'){
+			array_stack.push(1);
+		}
 	});
-};
 
-api._http = function(endpoint, callback){
-	request({
-	  url: 'https://app.simpli.fi/api/' + endpoint,
-	  headers: {
-	  	'X-App-Key': this.app_key,
-	  	'X-User-Key': this.user_key,
-	  	'Content-Type': 'application/json'
-	  }
-	}, function(err, res, body){
-		if(res.statusCode != 200) return console.err(res.statusCode, res.statusMessage);
-
-		callback(body);
-	});
-};
-
-api.adFileTypes = function(callback){
-	this._http('ad_file_types', callback);
-};
-
-api.me = function(callback){
-	this._http('', callback);
+	return source.input;
 };
 
 module.exports = API;
