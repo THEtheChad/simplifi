@@ -8,7 +8,5 @@
   },
   "author": "THEtheChad <chad.d.elliott@gmail.com>",
   "license": "MIT",
-  "dependencies": {
-    "request": "^2.78.0"
-  }
+  "dependencies": {}
 }
