@@ -8,5 +8,7 @@
   },
   "author": "THEtheChad <chad.d.elliott@gmail.com>",
   "license": "MIT",
-  "dependencies": {}
+  "dependencies": {
+    "stream-json": "^0.4.2"
+  }
 }
