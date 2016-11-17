@@ -1,4 +1,4 @@
-const defer = require('es6-defer');
+const Deferred = require('es6-deferred');
 
 const https = require('https');
 const stream = require('stream');
@@ -54,7 +54,7 @@ class SimpleRecords extends stream.Transform {
 }
 
 function findRecords(type, response, action){
-	return new Promise((resolve, reject){
+	return new Promise((resolve, reject)=>{
 		let combo = new Combo({packKeys:true,packStrings:true,packNumbers:true});
 		let filter = new FilterRecords({type:type});
 		let buildRecords = new StreamArray();
@@ -65,8 +65,8 @@ function findRecords(type, response, action){
 			.pipe(filter)
 			.pipe(buildRecords)
 			.pipe(simpleRecords)
-			.pipeline.on('data', action)
-			.pipeline.on('end', resolve);
+			.on('data', action)
+			.on('end', resolve);
 	});
 }
 
@@ -91,7 +91,6 @@ class API extends EventEmitter {
 	}
 
 	get(endpoint, parser) {
-		console.log(endpoint);
 		return https.get({
 			host: 'app.simpli.fi',
 			path: '/api/' + endpoint,
@@ -184,18 +183,25 @@ class API extends EventEmitter {
 			return;
 		}
 
-		let deferred = defer();
-		let processed = [deferred.promise];
+		let parent = new Deferred();
+		let records = [];
 
 		this.parent.each((record)=>{
 			this._eachId((id)=>{
-				this.get(this.endpoint(record, id), (response)=>{
-					processed.push(findRecords(this.type, response, (data)=>this.emit('record', data)))
-				})
-			})
-		}).fetch(()=>deferred.resolve());
+				let processed = new Deferred();
 
-		Promise.all(processed).then(complete);
+				this.get(this.endpoint(record, id), (response)=>{
+					findRecords(this.type, response, (data)=>this.emit('record', data))
+						.then(()=>processed.resolve());
+				});
+
+				records.push(processed);
+			})
+		}).fetch(()=>parent.resolve());
+
+		parent.then(()=>{
+			Promise.all(records).then(complete);
+		});
 
 		return this;
 	}
