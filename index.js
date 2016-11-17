@@ -1,3 +1,5 @@
+import defer from 'es6-defer';
+
 const https = require('https');
 const stream = require('stream');
 const Combo = require('stream-json/Combo');
@@ -51,13 +53,21 @@ class SimpleRecords extends stream.Transform {
   }
 }
 
-function findRecords(type, response){
-	let combo = new Combo({packKeys:true,packStrings:true,packNumbers:true});
-	let filter = new FilterRecords({type:type});
-	let buildRecords = new StreamArray();
-	let simpleRecords = new SimpleRecords();
+function findRecords(type, response, action){
+	return new Promise((resolve, reject){
+		let combo = new Combo({packKeys:true,packStrings:true,packNumbers:true});
+		let filter = new FilterRecords({type:type});
+		let buildRecords = new StreamArray();
+		let simpleRecords = new SimpleRecords();
 
-	return response.pipe(combo).pipe(filter).pipe(buildRecords).pipe(simpleRecords);
+		response
+			.pipe(combo)
+			.pipe(filter)
+			.pipe(buildRecords)
+			.pipe(simpleRecords)
+			.pipeline.on('data', action)
+			.pipeline.on('end', resolve);
+	});
 }
 
 function extend(trgt, src){
@@ -167,23 +177,28 @@ class API extends EventEmitter {
 		return this.on('record', callback);
 	}
 
-	fetch(){
-		if(this.type == 'root') return this.emit('record', {});
+	fetch(complete){
+		if(this.type == 'root'){
+			this.emit('record', {});
+			complete();
+			return;
+		}
+
+		let deferred = defer();
+		let processed = [deferred.promise];
 
 		this.parent.each((record)=>{
-			this._eachId((id)=>this.get(this.endpoint(record, id), (response)=>findRecords(this.type, response).on('data', (data)=>this.emit('record', data))))
-		}).fetch();
+			this._eachId((id)=>{
+				this.get(this.endpoint(record, id), (response)=>{
+					processed.push(findRecords(this.type, response, (data)=>this.emit('record', data)))
+				})
+			})
+		}).fetch(()=>deferred.resolve());
+
+		Promise.all(processed).then(complete);
+
+		return this;
 	}
 }
-// function API(config){
-// 	if(!(this instanceof API)) return new API(config);
-
-// 	this.app_key = config.app_key;
-// 	this.user_key = config.user_key;
-
-// 	this.type = config.type || 'root';
-// 	this.ids = config.ids || [];
-// 	this.parent = config.parent || this;
-// }
 
 module.exports = API;
