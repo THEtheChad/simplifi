@@ -1,4 +1,4 @@
-import defer from 'es6-defer';
+const defer = require('es6-defer');
 
 const https = require('https');
 const stream = require('stream');
