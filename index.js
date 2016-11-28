@@ -82,15 +82,18 @@ class API extends EventEmitter {
 		this.parent = config.parent || this;
 	}
 
-	get(endpoint, parser) {
-		return https.get({
+	ajax(method, endpoint, parser){
+		if(!/post|get/.test(method)) throw new Error(method + ' is not a supported method.');
+
+		return https.request({
 			host: 'app.simpli.fi',
 			path: '/api/' + endpoint,
 			headers: {
 				'X-App-Key': this.app_key,
 				'X-User-Key': this.user_key,
 				'Content-Type': 'application/json'
-			}
+			},
+			method: method
 		}, (response)=>{
 	    if (response.statusCode < 200 || response.statusCode > 299) {
 	    	console.error(new Error(response.statusCode + ': ' + response.statusMessage));
@@ -100,6 +103,14 @@ class API extends EventEmitter {
 	    	parser(response);
 	    }
 		});
+	}
+
+	post(endpoint, parser) {
+		return this.ajax('post', endpoint, parser);
+	}
+
+	get(endpoint, parser) {
+		return this.ajax('get', endpoint, parser);
 	}
 
 	_new(config) {
