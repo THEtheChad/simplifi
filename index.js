@@ -1,6 +1,7 @@
 const Deferred = require('es6-deferred');
 
 const https = require('https');
+const querystring = require('querystring');
 const stream = require('stream');
 const Combo = require('stream-json/Combo');
 const StreamArray = require('stream-json/utils/StreamArray');
@@ -82,19 +83,27 @@ class API extends EventEmitter {
 		this.parent = config.parent || this;
 	}
 
-	ajax(method, endpoint, parser){
-		if(!/post|get/.test(method)) throw new Error(method + ' is not a supported method.');
+	ajax(method, endpoint, data, parser){
 
-		return https.request({
+    let headers = {
+			'X-App-Key': this.app_key,
+			'X-User-Key': this.user_key,
+			'Content-Type': 'application/json'
+    };
+
+		if(data){
+		  let post_data = querystring.stringify(data);
+		  headers['Content-Type'] = 'application/x-www-form-urlencoded';
+		  headers['Content-Length'] = Buffer.byteLength(post_data);
+		}
+
+		let request = https.request({
 			host: 'app.simpli.fi',
 			path: '/api/' + endpoint,
-			headers: {
-				'X-App-Key': this.app_key,
-				'X-User-Key': this.user_key,
-				'Content-Type': 'application/json'
-			},
+			headers: headers,
 			method: method
-		}, (response)=>{
+    }, (response)=>{
+			response.setEncoding('utf8');
 	    if (response.statusCode < 200 || response.statusCode > 299) {
 	    	console.error(new Error(response.statusCode + ': ' + response.statusMessage));
 	    }
@@ -103,14 +112,26 @@ class API extends EventEmitter {
 	    	parser(response);
 	    }
 		});
+
+		if(data){
+			request.write(post_data);
+			request.end();
+		}
+
+		return request;
 	}
 
-	post(endpoint, parser) {
-		return this.ajax('post', endpoint, parser);
+	post(endpoint, data, parser) {
+		return this.ajax('post', endpoint, data, parser);
 	}
 
-	get(endpoint, parser) {
-		return this.ajax('get', endpoint, parser);
+	get(endpoint, data, parser) {
+		if(!parser){
+			parser = data;
+			data = null;
+		}
+
+		return this.ajax('get', endpoint, data, parser);
 	}
 
 	_new(config) {
