@@ -70,14 +70,6 @@ function findRecords(type, response, action){
 	});
 }
 
-function extend(trgt, src){
-	for(var k in src){
-		trgt[k] = src[k]
-	}
-	return trgt;
-}
-
-
 class API extends EventEmitter {
 	constructor(config) {
 		super();
