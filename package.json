@@ -9,7 +9,7 @@
   "author": "THEtheChad <chad.d.elliott@gmail.com>",
   "license": "MIT",
   "dependencies": {
-    "es6-defer": "^1.0.1",
+    "es6-deferred": "^1.3.0",
     "stream-json": "^0.4.2"
   }
 }
