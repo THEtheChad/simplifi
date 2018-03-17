@@ -1,10 +1,22 @@
 {
-  "dependencies": {
-    "JSONStream": "^1.3.0",
-    "debug": "^2.3.3"
-  },
   "name": "simplifi",
   "version": "1.3.2",
   "main": "index.js",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "JSONStream": "^1.3.0",
+    "debug": "^2.3.3",
+    "stream-fs-proxy": "^1.0.0"
+  },
+  "devDependencies": {
+    "babel-cli": "^6.26.0",
+    "babel-plugin-transform-class-properties": "^6.24.1",
+    "babel-preset-es2015": "^6.24.1"
+  },
+  "scripts": {
+    "build": "npm run clean && babel src -d lib",
+    "build:watch": "npm run build -- -w",
+    "clean": "rm -rf ./lib",
+    "prepare": "npm run clean && npm run build"
+  }
 }
