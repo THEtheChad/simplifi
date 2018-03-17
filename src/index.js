@@ -1,9 +1,8 @@
 import url from 'url'
 import https from 'https'
-import JSONStream from 'JSONStream'
-import FSProxy from 'stream-fs-proxy'
 import Debug from 'debug'
-import { resolve } from 'dns';
+import stream from 'stream'
+import JSONStream from 'JSONStream'
 
 const debug = Debug('simplifi')
 
@@ -88,7 +87,7 @@ export default class Simplifi {
 
     const method = _method.toUpperCase()
 
-    let proxy = new FSProxy
+    let proxy = new stream.PassThrough()
     proxy.path = path
     proxy.records = this.records
     proxy.toJSON = this.toJSON
