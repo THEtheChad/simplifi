@@ -6,6 +6,11 @@ import JSONStream from 'JSONStream'
 
 const debug = Debug('simplifi')
 
+function hasHeader(name, headers) {
+  const lname = name.toLowerCase()
+  return Object.keys(headers).find(header => header.toLowerCase() === lname)
+}
+
 export default class Simplifi {
   static HOST = 'app.simpli.fi'
 
@@ -20,12 +25,12 @@ export default class Simplifi {
     this._queue = []
   }
 
-  request(config, attempts = 1) {
+  request(config, attempts = 1, opts = {}) {
     const { path, method, proxy, data } = config
     const options = {
       path,
       method,
-      host: this.host,
+      host: opts.host || this.host,
       headers: {
         'X-App-Key': this.app_key,
         'X-User-Key': this.user_key,
@@ -33,32 +38,63 @@ export default class Simplifi {
       },
     }
 
-    const request = https.request(options)
+    try {
+      const request = https.request(options)
+      proxy.emit('request', request)
+      request.on('error', err => {
+        proxy.emit('error', err)
+        proxy.end()
+      })
+      request.on('socket', socket => proxy.emit('socket', socket))
 
-    if (method === 'POST' && data)
-      request.write(JSON.stringify(data))
+      if (method === 'POST' && data)
+        request.write(JSON.stringify(data))
 
-    request.on('response', response => {
-      if (process.env.DEBUG) {
-        debug(`${method} <= ${path}`)
-        response
-          .on('error', () => debug(`${method} !! ${path}`))
-          .on('end', () => debug(`${method} == ${path}`))
-      }
-
-      if (response.statusCode < 200 || response.statusCode >= 400) {
-        if (attempts < 4) {
-          setTimeout(() => this.request(config, ++attempts), Math.pow(40, attempts))
-          return
+      request.on('response', response => {
+        if (process.env.DEBUG) {
+          debug(`${method} <= ${path}`)
+          response
+            .on('error', () => debug(`${method} !! ${path}`))
+            .on('end', () => debug(`${method} == ${path}`))
         }
-      }
 
-      proxy.emit('response', response)
-      response.pipe(proxy)
-    })
+        if (response.statusCode < 200 || response.statusCode >= 400) {
+          if (attempts < 4) {
+            setTimeout(() => this.request(config, ++attempts), Math.pow(40, attempts))
+            return
+          }
+        }
 
-    debug(`${method} => ${path}`)
-    request.end()
+        const locationHeader = hasHeader('location', response.headers)
+        if (response.statusCode >= 300 && locationHeader) {
+          const location = response.headers[locationHeader]
+          debug('redirect', location)
+
+          switch (method) {
+            case 'PATCH':
+            case 'PUT':
+            case 'POST':
+            case 'DELETE':
+              // Do not follow redirects
+              break
+            default:
+              // @TODO: needs actual testing
+              const target = url.parse(location)
+              this.request(Object.assign({}, config, { path: target.pathname }), attempts, { host: target.host })
+              return
+          }
+        }
+
+        proxy.emit('response', response)
+        response.pipe(proxy)
+      })
+
+      debug(`${method} => ${path}`)
+      request.end()
+    } catch (err) {
+      proxy.emit('error', err)
+      proxy.end()
+    }
   }
 
   flush() {
