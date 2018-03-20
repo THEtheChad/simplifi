@@ -3,6 +3,7 @@ import https from 'https'
 import Debug from 'debug'
 import stream from 'stream'
 import JSONStream from 'JSONStream'
+import Response from './Response'
 
 const debug = Debug('simplifi')
 
@@ -123,10 +124,7 @@ export default class Simplifi {
 
     const method = _method.toUpperCase()
 
-    let proxy = new stream.PassThrough()
-    proxy.path = path
-    proxy.records = this.records
-    proxy.toJSON = this.toJSON
+    let proxy = new Response(path)
     this.queue({
       method,
       path,
@@ -142,43 +140,5 @@ export default class Simplifi {
 
   get(path, data, options) {
     return this.ajax('GET', path, data, options);
-  }
-
-  toJSON(callback) {
-    const chunks = []
-    this.on('data', chunk => chunks.push(chunk.toString()))
-
-    const result = new Promise((resolve, reject) => {
-      this.on('end', () => {
-        const body = chunks.join('')
-        try {
-          const json = JSON.parse(body)
-          resolve(json)
-        }
-        catch (err) {
-          reject(err)
-        }
-      })
-    })
-
-    if (callback) {
-      result
-        .then(json => callback(null, json))
-        .catch(err => callback(err))
-    }
-
-    return result
-  }
-
-  records() {
-    let segments = this.path.split('/')
-    let target = segments.pop()
-
-    // make sure we have an actual target
-    if (/\d/.test(target))
-      target = segments.pop()
-
-    target += '.*';
-    return this.pipe(JSONStream.parse(target))
   }
 }
