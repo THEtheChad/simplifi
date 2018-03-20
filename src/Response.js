@@ -21,9 +21,19 @@ class toJSON extends stream.Transform {
 }
 
 export default class Response extends stream.Transform {
+  static ROOT_ORGANIZATION_PATTERNS = [
+    /organizations\/?$/,
+    /organizations\/[^/]+\/?$/,
+    /organizations\/[^/]+\/(descendants|children)$/,
+  ]
+
   constructor(path) {
     super()
     this.path = path
+
+    this.rootOrganization = Response
+      .ROOT_ORGANIZATION_PATTERNS.some(pattern =>
+        pattern.test(path))
   }
 
   _transform(chunk, enc, next) {
@@ -38,7 +48,7 @@ export default class Response extends stream.Transform {
   }
 
   records() {
-    if (/organizations/.test(this.path)) {
+    if (this.rootOrganization) {
       return this.toJSON('organizations.*')
     }
 
@@ -50,7 +60,7 @@ export default class Response extends stream.Transform {
       target = segments.pop()
 
     target += '.*';
-    console.log(target)
+
     return this.toJSON(target)
   }
 }
