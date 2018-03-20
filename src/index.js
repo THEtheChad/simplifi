@@ -1,4 +1,4 @@
-import url from 'url'
+import Url from 'url'
 import https from 'https'
 import Debug from 'debug'
 import stream from 'stream'
@@ -26,18 +26,18 @@ export default class Simplifi {
     this._queue = []
   }
 
-  request(config, attempts = 1, opts = {}) {
-    const { path, method, proxy, data } = config
-    const options = {
-      path,
+  request(config, attempts = 1) {
+    const { url, method, proxy, data, opts } = config
+    const parsed = Url.parse(url)
+
+    const options = Object.assign({
       method,
-      host: opts.host || this.host,
       headers: {
         'X-App-Key': this.app_key,
         'X-User-Key': this.user_key,
         'Content-Type': 'application/json'
-      },
-    }
+      }
+    }, parsed)
 
     try {
       const request = https.request(options)
@@ -53,10 +53,10 @@ export default class Simplifi {
 
       request.on('response', response => {
         if (process.env.DEBUG) {
-          debug(`${method} <= ${path}`)
+          debug(`${method} <= ${url}`)
           response
-            .on('error', () => debug(`${method} !! ${path}`))
-            .on('end', () => debug(`${method} == ${path}`))
+            .on('error', () => debug(`${method} !! ${url}`))
+            .on('end', () => debug(`${method} == ${url}`))
         }
 
         if (response.statusCode < 200 || response.statusCode >= 400) {
@@ -80,17 +80,33 @@ export default class Simplifi {
               break
             default:
               // @TODO: needs actual testing
-              const target = url.parse(location)
-              this.request(Object.assign({}, config, { path: target.pathname }), attempts, { host: target.host })
+              this.request(Object.assign({}, config, { url: location }), attempts)
               return
           }
         }
 
         proxy.emit('response', response)
-        response.pipe(proxy)
+        response.pipe(proxy, { end: false })
+
+        let paginated = false
+        response.on('end', () => {
+          if (!paginated) proxy.end()
+        })
+
+        response
+          .pipe(JSONStream.parse('paging'))
+          .on('data', paging => {
+            proxy.emit('paging', paging)
+
+            if (paging.next && opts.all) {
+              paginated = true
+              this.request(Object.assign({}, config, { url: paging.next }), attempts)
+              return
+            }
+          })
       })
 
-      debug(`${method} => ${path}`)
+      debug(`${method} => ${url}`)
       request.end()
     } catch (err) {
       proxy.emit('error', err)
@@ -116,29 +132,39 @@ export default class Simplifi {
     if (!this.timer) this.flush()
   }
 
-  ajax(_method, _path, data, options = {}) {
+  ajax(_method, target, data, opts = {}) {
     // normalize the path (/api/{path})
-    let path = url.parse(_path).pathname;
-    path = path.replace(/^\/?api\/?/, '')
-    path = `/api/${path}`
+    const _url = Url.parse(target)
+    if (!_url.host) _url.host = this.host
+    if (!_url.protocol) _url.protocol = 'https:'
+
+    if (!/^\//.test(_url.pathname)) {
+      _url.pathname = '/' + _url.pathname
+    }
+    if (!/^\/api/.test(_url.pathname)) {
+      _url.pathname = '/api' + _url.pathname
+    }
+
+    const url = Url.format(_url)
 
     const method = _method.toUpperCase()
 
-    let proxy = new Response(path)
+    let proxy = new Response(url)
     this.queue({
       method,
-      path,
+      url,
       proxy,
-      data
+      data,
+      opts,
     })
     return proxy
   }
 
-  post(path, data, options) {
-    return this.ajax('POST', path, data, options);
+  post(target, data, opts) {
+    return this.ajax('POST', target, data, opts);
   }
 
-  get(path, data, options) {
-    return this.ajax('GET', path, data, options);
+  get(target, opts) {
+    return this.ajax('GET', target, null, opts);
   }
 }

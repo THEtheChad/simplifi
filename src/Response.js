@@ -42,9 +42,12 @@ export default class Response extends stream.Transform {
   }
 
   toJSON(target) {
-    return target ?
+    const stream = target ?
       this.pipe(JSONStream.parse(target)) :
       this.pipe(new toJSON)
+
+    this.on('paging', paging => stream.emit('paging', paging))
+    return stream
   }
 
   records() {

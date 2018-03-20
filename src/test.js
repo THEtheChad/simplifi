@@ -7,8 +7,8 @@ const simplifi = new Simplifi({
 
 const body = []
 simplifi
-  .get('organizations/2400/children')
+  .get('organizations', { all: true })
   .records()
   .on('error', err => console.error(err))
-  .on('data', chunk => console.log(chunk))
+  .on('data', chunk => console.log(chunk.id))
   .on('end', () => console.log('end'))
