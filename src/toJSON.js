@@ -1,3 +1,5 @@
+import stream from 'stream'
+
 export default class toJSON extends stream.Transform {
   constructor(opts = {}) {
     super(Object.assign(opts, { objectMode: true }))
