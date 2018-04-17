@@ -44,6 +44,8 @@ export default class Response extends stream.PassThrough {
   }
 
   bind(stream) {
+    this.on('socket', socket => stream.emit('socket', socket))
+    this.on('request', request => stream.emit('request', request))
     this.on('response', response => stream.emit('response', response))
     this.on('paging', paging => stream.emit('paging', paging))
     this.on('error', err => stream.emit('error', err))
