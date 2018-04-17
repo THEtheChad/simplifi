@@ -1,26 +1,8 @@
 import stream from 'stream'
 import JSONStream from 'JSONStream'
+import toJSON from './toJSON'
 
-class toJSON extends stream.Transform {
-  constructor(opts = {}) {
-    super(Object.assign(opts, { objectMode: true }))
-    this.body = []
-  }
-
-  _flush(done) {
-    const body = this.body.join('')
-    const json = JSON.parse(body)
-    this.push(json)
-    done()
-  }
-
-  _transform(chunk, enc, next) {
-    this.body.push(chunk.toString())
-    next()
-  }
-}
-
-export default class Response extends stream.Transform {
+export default class Response extends stream.PassThrough {
   static ROOT_ORGANIZATION_PATTERNS = [
     /organizations\/?$/,
     /organizations\/[^/]+\/?$/,
