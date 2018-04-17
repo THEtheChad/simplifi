@@ -149,7 +149,7 @@ export default class Simplifi {
 
     const method = _method.toUpperCase()
 
-    let proxy = new Response(url)
+    let proxy = new Response(_url.pathname)
     this.queue({
       method,
       url,
