@@ -11,16 +11,11 @@ export default class Response extends stream.PassThrough {
 
   constructor(path) {
     super()
-    this.path = path
 
+    this.path = path
     this.rootOrganization = Response
       .ROOT_ORGANIZATION_PATTERNS.some(pattern =>
         pattern.test(path))
-  }
-
-  _transform(chunk, enc, next) {
-    this.push(chunk)
-    next()
   }
 
   toJSON(target) {
@@ -28,8 +23,7 @@ export default class Response extends stream.PassThrough {
       this.pipe(JSONStream.parse(target)) :
       this.pipe(new toJSON)
 
-    this.on('paging', paging => stream.emit('paging', paging))
-    return stream
+    return this.bind(stream)
   }
 
   records() {
@@ -47,5 +41,11 @@ export default class Response extends stream.PassThrough {
     target += '.*';
 
     return this.toJSON(target)
+  }
+
+  bind(stream) {
+    this.on('response', response => stream.emit('response', response))
+    this.on('paging', paging => stream.emit('paging', paging))
+    return stream
   }
 }
