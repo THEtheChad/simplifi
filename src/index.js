@@ -53,10 +53,10 @@ export default class Simplifi {
 
       request.on('response', response => {
         if (process.env.DEBUG) {
-          debug(`${method} <= ${url}`)
+          debug(`${method} ${response.statusCode} ${url}`)
           response
-            .on('error', () => debug(`${method} !! ${url}`))
-            .on('end', () => debug(`${method} == ${url}`))
+            .on('error', () => debug(`${method} !!! ${url}`))
+            .on('end', () => debug(`${method} <== ${url}`))
         }
 
         if (response.statusCode < 200 || response.statusCode >= 400) {
@@ -106,7 +106,7 @@ export default class Simplifi {
           })
       })
 
-      debug(`${method} => ${url}`)
+      debug(`${method} ==> ${url}`)
       request.end()
     } catch (err) {
       proxy.emit('error', err)
