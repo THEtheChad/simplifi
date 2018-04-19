@@ -73,7 +73,12 @@ export default class Client {
         request.statusCode = response.statusCode
 
         if (response.statusCode < 200 || response.statusCode >= 400) {
-          return request.backoff()
+          if (opts.retry) {
+            request.backoff()
+          } else {
+            request.emit('error', new Error(`Failed ${response.statusCode}`))
+          }
+          return
         }
 
         const locationHeader = hasHeader('location', response.headers)
@@ -130,7 +135,7 @@ export default class Client {
     }
   }
 
-  ajax(method, url, data, opts = {}) {
+  ajax(method, url, data, opts) {
     return new Request(this, { method, url, data, opts })
   }
 

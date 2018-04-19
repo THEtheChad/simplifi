@@ -14,7 +14,7 @@ export default class Request extends stream.PassThrough {
     this.method = method.toUpperCase()
 
     // add defaults
-    this.opts = opts || {}
+    this.opts = Object.assign({ retry: true }, opts)
     this.attempts = attempts || 1
 
     // normalize urls
