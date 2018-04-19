@@ -31,7 +31,9 @@ export default class Client {
 
     function nextRequest() {
       if (!this._queue.length) {
-        return clearInterval(this.timer)
+        clearInterval(this.timer)
+        this.timer = null
+        return
       }
 
       this.sendRequest(this._queue.shift())
@@ -127,9 +129,8 @@ export default class Client {
   }
 
   queue(request) {
-    let active = this._queue.length
     this._queue.push(request)
-    if (!active) {
+    if (!this.timer) {
       this.nextRequest()
       this.timer = setInterval(this.nextRequest, Client.RATELIMIT)
     }
