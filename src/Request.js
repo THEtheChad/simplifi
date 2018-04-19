@@ -6,7 +6,7 @@ export default class Request extends stream.PassThrough {
   static isSingleRecord = /\/\d+\/?$/
   static isOrganization = /organizations(\/(\d+(\/((descendants|children)\/?)?)?)?)?$/
 
-  constructor(api, { method, url, data, attempts, opts }, isPage) {
+  constructor(api, { method, url, data, attempts, opts }) {
     super()
 
     this.api = api
@@ -38,7 +38,14 @@ export default class Request extends stream.PassThrough {
   }
 
   clone(override = {}) {
-    return Object.assign({}, this, override)
+    return Object.assign({}, {
+      method: this.method,
+      url: Url.format(this.url),
+      // @TODO: make this a deep clone
+      data: Object.assign({}, this.data),
+      attempts: this.attempts,
+      opts: Object.assign(this.opts),
+    }, override)
   }
 
   redirect(url) {
