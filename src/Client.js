@@ -109,16 +109,18 @@ export default class Client {
           if (!paginated) request.end()
         })
 
-        response
-          .pipe(JSONStream.parse('paging'))
-          .on('data', paging => {
-            request.emit('paging', paging)
+        if (request.isJSON) {
+          response
+            .pipe(JSONStream.parse('paging'))
+            .on('data', paging => {
+              request.emit('paging', paging)
 
-            if (paging.next && opts.all) {
-              paginated = true
-              return request.redirect(paging.next)
-            }
-          })
+              if (paging.next && opts.all) {
+                paginated = true
+                return request.redirect(paging.next)
+              }
+            })
+        }
       })
 
       debug(`${method} ==> ${href}`)

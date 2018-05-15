@@ -73,6 +73,7 @@ export default class Request extends stream.PassThrough {
   }
 
   toJSON(target) {
+    this.isJSON = true
     const through = JSONStream.parse(target)
     this.bind(through).exec()
     return through
