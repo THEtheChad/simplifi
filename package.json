@@ -1,21 +1,30 @@
 {
   "name": "simplifi",
-  "version": "2.0.3",
+  "version": "3.0.0",
   "main": "lib/Client.js",
   "license": "MIT",
+  "scripts": {
+    "clean": "shx rm -rf lib",
+    "build": "gosub clean && babel src --include-dotfiles --copy-files --out-dir lib",
+    "build:watch": "gosub build -- -w",
+    "start": "gosub build && node $npm_package_main",
+    "test": "gosub build && jasmine",
+    "prepare": "gosub build"
+  },
   "dependencies": {
-    "JSONStream": "^1.3.0",
-    "debug": "^2.3.3"
+    "JSONStream": "^1.3.5",
+    "csv-write-stream": "^2.0.0",
+    "debug": "^4.1.1",
+    "format-json-stream": "^0.1.5",
+    "highland": "^2.13.4",
+    "request": "^2.88.0"
   },
   "devDependencies": {
-    "babel-cli": "^6.26.0",
-    "babel-plugin-transform-class-properties": "^6.24.1",
-    "babel-preset-es2015": "^6.24.1"
-  },
-  "scripts": {
-    "build": "npm run clean && babel src -d lib",
-    "build:watch": "npm run build -- -w",
-    "clean": "rm -rf ./lib",
-    "prepare": "npm run clean && npm run build"
+    "@babel/cli": "^7.4.4",
+    "@babel/core": "^7.4.4",
+    "@babel/plugin-proposal-class-properties": "^7.4.4",
+    "@babel/preset-env": "^7.4.4",
+    "gosub": "^1.1.0",
+    "shx": "^0.3.2"
   }
 }

@@ -1,113 +1,77 @@
-import Url from 'url'
-import stream from 'stream'
 import JSONStream from 'JSONStream'
+import pretty from 'format-json-stream'
+import csvWriter from 'csv-write-stream'
 
-export default class Request extends stream.PassThrough {
+export default class Request {
   static isSingleRecord = /\/\d+\/?$/
   static isOrganization = /organizations(\/(\d+(\/((descendants|children)\/?)?)?)?)?$/
 
-  constructor(api, { method, url, data, attempts, opts }) {
-    super()
+  constructor(client, method, url, params = {}){
+    this.client = client
+    this.method = method
+    this.params = params
+    this.url = url
+  }
 
-    this.api = api
-    this.data = data
-    this.method = method.toUpperCase()
+  stream(){
+    const { method, url, params } = this
 
-    // add defaults
-    this.opts = Object.assign({ retry: true }, opts)
-    this.attempts = attempts || 1
-
-    // normalize urls
-    this.url = Url.parse(url)
-
-    if (!this.url.host) this.url.host = api.host
-    if (!this.url.protocol) this.url.protocol = api.protocol
-
-    // make sure we prefix the path with a slash
-    if (!/^\//.test(this.url.pathname)) {
-      this.url.path = '/' + this.url.path
-      this.url.pathname = '/' + this.url.pathname
+    const options = { method, url }
+    if(method === 'GET'){
+      options.qs = params
     }
 
-    if (!/^\/api/.test(this.url.pathname)) {
-      this.url.path = '/api' + this.url.path
-      this.url.pathname = '/api' + this.url.pathname
-    }
-
-    this.on('error', () => this.end())
+    return this.client.request(options)
   }
 
-  clone(override = {}) {
-    return Object.assign({}, {
-      method: this.method,
-      url: Url.format(this.url),
-      // @TODO: make this a deep clone
-      data: Object.assign({}, this.data),
-      attempts: this.attempts,
-      opts: Object.assign(this.opts),
-    }, override)
+  pretty(){
+    return this.stream().pipe(pretty())
   }
 
-  redirect(url) {
-    new Request(this.api, this.clone({ url })).bind(this).exec()
+  json(target = '*'){
+    return this.stream().pipe(JSONStream.parse(target))
   }
 
-  backoff() {
-    if (this.attempts > 3) {
-      return this.emit('error', new Error(`${this.statusCode} after ${this.attempts} attempts`))
-    }
+  all(){
+    // let paginated = false
+    // response.on('end', () => {
+    //   if (!paginated) request.end()
+    // })
 
-    const attempts = this.attempts + 1
-    const next = new Request(this.api, this.clone({ attempts })).bind(this)
+    // if (request.isJSON) {
+    //   response
+    //     .pipe(JSONStream.parse('paging'))
+    //     .on('data', paging => {
+    //       request.emit('paging', paging)
 
-    setTimeout(() => next.exec(), Math.pow(this.api.backoff, attempts))
-  }
-
-  exec() {
-    this.api.queue(this)
+    //       if (paging.next && opts.all) {
+    //         paginated = true
+    //         return request.redirect(paging.next)
+    //       }
+    //     })
+    // }
     return this
   }
 
-  toStream() {
-    return this.exec()
-  }
-
-  toJSON(target) {
-    this.isJSON = true
-    const through = JSONStream.parse(target)
-    this.bind(through).exec()
-    return through
-  }
-
-  toRecords() {
-    if (Request.isSingleRecord.test(this.url.pathname)) {
-      return this.toJSON()
+  records() {
+    if (this.constructor.isSingleRecord.test(this.url)) {
+      return this.json()
     }
 
     let target = null
 
-    if (Request.isOrganization.test(this.url.pathname)) {
+    if (this.constructor.isOrganization.test(this.url)) {
       target = 'organizations'
     } else {
-      let segments = this.url.pathname.split('/')
+      let segments = this.url.split('/')
 
       // make sure we have an actual target
       do {
         target = segments.pop()
       }
-      while (Request.isSingleRecord.test(target))
+      while (this.constructor.isSingleRecord.test(target))
     }
 
-    return this.toJSON(`${target}.*`)
-  }
-
-  bind(stream) {
-    this.pipe(stream)
-    this.on('socket', socket => stream.emit('socket', socket))
-    this.on('request', request => stream.emit('request', request))
-    this.on('response', response => stream.emit('response', response))
-    this.on('paging', paging => stream.emit('paging', paging))
-    this.on('error', err => stream.emit('error', err))
-    return this
+    return this.json(`${target}.*`)
   }
 }
