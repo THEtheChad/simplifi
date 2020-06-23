@@ -48,8 +48,6 @@ export default class Request extends PassThrough {
 			params;
 		}
 
-		console.log(params);
-
 		https
 			.request(url, options, (response) => {
 				this.emit('response', response);
