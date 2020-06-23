@@ -78,6 +78,7 @@ export default class Request extends PassThrough {
 			request.json(target).pipe(stream, { end: false });
 
 			request.json('paging').on('data', (paging: any) => {
+				stream.emit('paging', paging);
 				if (paging.next) {
 					paginated = true;
 					const url = new URL(paging.next);
