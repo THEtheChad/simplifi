@@ -1,30 +1,26 @@
 {
-  "name": "simplifi",
-  "version": "3.0.0",
-  "main": "lib/Client.js",
-  "license": "MIT",
-  "scripts": {
-    "clean": "shx rm -rf lib",
-    "build": "gosub clean && babel src --include-dotfiles --copy-files --out-dir lib",
-    "build:watch": "gosub build -- -w",
-    "start": "gosub build && node $npm_package_main",
-    "test": "gosub build && jasmine",
-    "prepare": "gosub build"
-  },
-  "dependencies": {
-    "JSONStream": "^1.3.5",
-    "csv-write-stream": "^2.0.0",
-    "debug": "^4.1.1",
-    "format-json-stream": "^0.1.5",
-    "highland": "^2.13.4",
-    "request": "^2.88.0"
-  },
-  "devDependencies": {
-    "@babel/cli": "^7.4.4",
-    "@babel/core": "^7.4.4",
-    "@babel/plugin-proposal-class-properties": "^7.4.4",
-    "@babel/preset-env": "^7.4.4",
-    "gosub": "^1.1.0",
-    "shx": "^0.3.2"
-  }
+	"name": "simplifi",
+	"version": "0.0.1",
+	"license": "MIT",
+	"main": "lib/SimplifiClient.js",
+	"types": "lib/SimplifiClient.d.ts",
+	"scripts": {
+		"prepack": "gosub build",
+		"build": "tsc",
+		"watch": "tsc --w",
+		"test": "jest",
+		"start": "node $npm_package_main",
+		"dev": "ts-node src/main.ts"
+	},
+	"devDependencies": {
+		"@types/jest": "^26.0.0",
+		"@types/node": "^14.0.13",
+		"gosub": "^1.1.0",
+		"jest": "^26.0.1",
+		"ts-node": "^8.10.2",
+		"typescript": "^3.9.5"
+	},
+	"dependencies": {
+		"JSONStream": "^1.3.5"
+	}
 }
