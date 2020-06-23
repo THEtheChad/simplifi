@@ -1,6 +1,6 @@
 {
 	"name": "simplifi",
-	"version": "0.0.1",
+	"version": "4.0.0",
 	"license": "MIT",
 	"main": "lib/SimplifiClient.js",
 	"types": "lib/SimplifiClient.d.ts",
