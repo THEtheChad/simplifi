@@ -36,12 +36,14 @@ export default class Request extends PassThrough {
 	stream() {
 		let { method, url, params } = this;
 
-		// @ts-ignore
-		url.method = method;
-		// @ts-ignore
-		url.headers = {
-			'X-App-Key': this.client.app_key,
-			'X-User-Key': this.client.user_key
+		const options = {
+			hostname: url.hostname,
+			method,
+			headers: {
+				'X-App-Key': this.client.app_key,
+				'X-User-Key': this.client.user_key
+			},
+			path: url.pathname + url.search
 		};
 
 		if (method === 'POST') {
@@ -49,7 +51,7 @@ export default class Request extends PassThrough {
 		}
 
 		https
-			.request(url, (response) => {
+			.request(options, (response) => {
 				this.emit('response', response);
 				response.pipe(this);
 			})
