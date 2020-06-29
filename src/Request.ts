@@ -36,20 +36,20 @@ export default class Request extends PassThrough {
 	stream() {
 		let { method, url, params } = this;
 
-		const options = Object.assign({}, url, {
-			method,
-			headers: {
-				'X-App-Key': this.client.app_key,
-				'X-User-Key': this.client.user_key
-			}
-		});
+		// @ts-ignore
+		url.method = method;
+		// @ts-ignore
+		url.headers = {
+			'X-App-Key': this.client.app_key,
+			'X-User-Key': this.client.user_key
+		};
 
 		if (method === 'POST') {
 			params;
 		}
 
 		https
-			.request(options, (response) => {
+			.request(url, (response) => {
 				this.emit('response', response);
 				response.pipe(this);
 			})
