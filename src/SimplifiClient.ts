@@ -1,5 +1,5 @@
 /// <reference path="../global.d.ts" />
-import Url from 'url';
+import Url, { URL } from 'url';
 import Request from './Request';
 
 interface SimplifiClientOptions {
@@ -22,12 +22,12 @@ export default class SimplifiClient {
 
 		if (!app_key) {
 			missing.push(
-				`${this.constructor.name} requires an application key (${app_key})`,
+				`${this.constructor.name} requires an application key (${app_key})`
 			);
 		}
 		if (!user_key) {
 			missing.push(
-				`${this.constructor.name} requires a user key (${user_key})`,
+				`${this.constructor.name} requires a user key (${user_key})`
 			);
 		}
 		if (missing.length) {
