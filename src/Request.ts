@@ -23,7 +23,7 @@ export default class Request extends PassThrough {
 		client: SimplifiClient,
 		method: string,
 		url: URL,
-		params: Parameters = {},
+		params: Parameters = {}
 	) {
 		super();
 
@@ -36,12 +36,12 @@ export default class Request extends PassThrough {
 	stream() {
 		let { method, url, params } = this;
 
-		const options = Object.assign({
+		const options = Object.assign({}, url, {
 			method,
 			headers: {
 				'X-App-Key': this.client.app_key,
-				'X-User-Key': this.client.user_key,
-			},
+				'X-User-Key': this.client.user_key
+			}
 		});
 
 		if (method === 'POST') {
@@ -49,7 +49,7 @@ export default class Request extends PassThrough {
 		}
 
 		https
-			.request(url, options, (response) => {
+			.request(options, (response) => {
 				this.emit('response', response);
 				response.pipe(this);
 			})
